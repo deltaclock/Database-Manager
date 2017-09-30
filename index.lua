@@ -1,5 +1,5 @@
 local white = Color.new(255,255,255) -- Create a new color
-
+--add file size check
 System.createDirectory("ux0:/data/iconsbak")
 
 function wipeDB()
@@ -110,9 +110,13 @@ while true do
 								if state == FINISHED then
 									copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
 									Graphics.debugPrint(5, 5, "Backup completed", white)
+									Graphics.termBlend()
+									Screen.flip()
 									break
 								elseif state == CANCELED then
 									Graphics.debugPrint(5, 5, "Backup canceled", white)
+									Graphics.termBlend()
+									Screen.flip()
 									break
 								end	
 							Graphics.termBlend()
@@ -154,7 +158,7 @@ while true do
 	if Controls.check(Controls.read(), SCE_CTRL_CIRCLE) then
 
 		if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") then
-			System.setMessage("Your current icon layout will be lost!\nProceed with restoring your backuped layout?", false, BUTTON_YES_NO)
+			System.setMessage("Your current icon layout will be lost!\nProceed with restoring your saved layout?", false, BUTTON_YES_NO)
 				while true do
 					Graphics.initBlend()
 					Screen.clear()
@@ -169,20 +173,23 @@ while true do
 						elseif state == FINISHED then
 							copy("ux0:/data/iconsbak/iconlayout.ini", "ux0:/iconlayout.ini")
 							updateDB()
-							break
 						end
 					Graphics.termBlend()
 					Screen.flip()	
 				end
-		else
 			Graphics.initBlend()
-			Screen.clear()
-			Graphics.debugPrint(5, 5, "No file to restore\nUse the backup option of this app to create one", white)
+			Screen.clear()	
 			Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
 			Graphics.termBlend()
 			Screen.flip()
 			System.wait(5000000)
 			System.exit()
+		else
+			Graphics.initBlend()
+			Screen.clear()
+			Graphics.debugPrint(5, 5, "No file to restore\nUse the backup option of this app to create one", white)
+			Graphics.termBlend()
+			Screen.flip()
 		end	
 	end		
 end	--main loop end
