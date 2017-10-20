@@ -42,30 +42,7 @@ function wipeDB()
 		printText("Wipe canceled", red, "Exiting in 5 sec")
 		System.wait(5000000)
 		System.exit()
-	end		
-	--[[System.setMessage("Your database will be wipped!\nYour system will reboot!\nProceed?", false, BUTTON_YES_NO)
-				while true do
-					Graphics.initBlend()
-					Screen.clear()
-					 state = System.getMessageState()
-						if state == CANCELED then
-							Graphics.debugPrint(5, 5, "Wipe canceled", red)
-							Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
-							Graphics.termBlend()
-							Screen.flip()
-							System.wait(5000000)
-							System.exit()
-						elseif state == FINISHED then
-							System.deleteFile("ur0:shell/db/app.db")
-							Graphics.debugPrint(5, 5, "Rebooting in 5 sec", white)
-							Graphics.termBlend()
-							Screen.flip()
-							System.wait(5000000)
-							System.reboot()
-						end
-					Graphics.termBlend()
-					Screen.flip()	
-				end	]]		
+	end			
 end
 
 function updateDB()
@@ -80,28 +57,6 @@ function updateDB()
 		System.wait(5000000)
 		System.exit()
 	end		
-	--[[System.setMessage("Do you wanna reboot now?", false, BUTTON_YES_NO)
-			while true do
-				Graphics.initBlend()
-				Screen.clear()
-				 state = System.getMessageState()
-					if state == CANCELED then
-							Graphics.debugPrint(5, 5, "Reboot canceled", red)
-							Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
-							Graphics.termBlend()
-							Screen.flip()
-							System.wait(5000000)
-							System.exit()
-					elseif state == FINISHED then
-							Graphics.debugPrint(5, 5, "Rebooting in 5 sec", white)
-							Graphics.termBlend()
-							Screen.flip()
-							System.wait(5000000)
-							System.reboot()
-					end	
-				Graphics.termBlend()
-				Screen.flip()
-			end]]	
 end
 
 function copy(file1, file2)
