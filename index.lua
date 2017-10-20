@@ -1,15 +1,55 @@
-local white = Color.new(255,255,255) -- Create a new color
---add file size check
+local white = Color.new(255,255,255)
+local red =  Color.new(255,51,51)-- Create a new color
+--[[TODO 
+*add file size check
+*add timer
+]]
 System.createDirectory("ux0:/data/iconsbak")
 
+function confirm(text)
+	System.setMessage(text, false, BUTTON_YES_NO)
+	while true do
+		Graphics.initBlend()
+		Screen.clear()
+		Graphics.termBlend()
+		Screen.flip()
+		state = System.getMessageState()
+		if state == FINISHED then
+			return true
+		elseif state == CANCELED then
+			return false
+		end
+	end
+end
+
+function printText(text1, color, text2)--at position 5,5
+	Graphics.initBlend()
+	Screen.clear()
+	Graphics.debugPrint(5, 5, text1, color)
+	Graphics.debugPrint(5, 45, text2, white)
+	Graphics.termBlend()
+	Screen.flip()
+end
+
 function wipeDB()
-	System.setMessage("Your database will be wipped!\nYour system will reboot!\nProceed?", false, BUTTON_YES_NO)
+	flag = confirm("Your database will be wipped!\nYour system will reboot!\nProceed?")
+	if flag then 
+		System.deleteFile("ur0:shell/db/app.db")
+		printText("Rebooting in 5 sec", white, "")
+		System.wait(5000000)
+		System.reboot()
+	else
+		printText("Wipe canceled", red, "Exiting in 5 sec")
+		System.wait(5000000)
+		System.exit()
+	end		
+	--[[System.setMessage("Your database will be wipped!\nYour system will reboot!\nProceed?", false, BUTTON_YES_NO)
 				while true do
 					Graphics.initBlend()
 					Screen.clear()
 					 state = System.getMessageState()
 						if state == CANCELED then
-							Graphics.debugPrint(5, 5, "Wipe canceled", Color.new(255,51,51))
+							Graphics.debugPrint(5, 5, "Wipe canceled", red)
 							Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
 							Graphics.termBlend()
 							Screen.flip()
@@ -25,18 +65,28 @@ function wipeDB()
 						end
 					Graphics.termBlend()
 					Screen.flip()	
-				end			
+				end	]]		
 end
 
 function updateDB()
 	System.deleteFile("ux0:/id.dat")
-	System.setMessage("Do you wanna reboot now?", false, BUTTON_YES_NO)
+	flag = confirm("Do you wanna reboot now?")
+	if flag then 
+		printText("Rebooting in 5 sec", white, "")
+		System.wait(5000000)
+		System.reboot()
+	else
+		printText("Reboot canceled", red, "Exiting in 5 sec")
+		System.wait(5000000)
+		System.exit()
+	end		
+	--[[System.setMessage("Do you wanna reboot now?", false, BUTTON_YES_NO)
 			while true do
 				Graphics.initBlend()
 				Screen.clear()
 				 state = System.getMessageState()
 					if state == CANCELED then
-							Graphics.debugPrint(5, 5, "Reboot canceled", Color.new(255,51,51))
+							Graphics.debugPrint(5, 5, "Reboot canceled", red)
 							Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
 							Graphics.termBlend()
 							Screen.flip()
@@ -51,7 +101,7 @@ function updateDB()
 					end	
 				Graphics.termBlend()
 				Screen.flip()
-			end	
+			end]]	
 end
 
 function copy(file1, file2)
@@ -59,10 +109,11 @@ function copy(file1, file2)
 	System.rename(file1, file2)--moving files
 	file = System.openFile(file2, FREAD)
 	size = System.sizeFile(file)
-	text = System.readFile(file, size)
+	data = System.readFile(file, size)
 	newfile = System.openFile(file1, FCREATE)
-	System.writeFile(newfile, text, size)
+	System.writeFile(newfile, data, size)
 end
+
 while true do
 	-- Draw a string on the screen
 	Graphics.initBlend()
@@ -95,101 +146,51 @@ while true do
 
 	-- Check controls for backup
 	if Controls.check(Controls.read(), SCE_CTRL_CROSS) then
-		
 			if System.doesFileExist("ux0:/iconlayout.ini") then
 
 				if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") then
 
-					System.setMessage("Your previous backup will be overwritten!!\nDo you wanna continue?", false, BUTTON_YES_NO)
+					flag = confirm("Your previous backup will be overwritten!!\nDo you wanna continue?")
 
-						while true do
-							Graphics.initBlend()
-							Screen.clear()
-							state = System.getMessageState()
-
-								if state == FINISHED then
-									copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
-									Graphics.debugPrint(5, 5, "Backup completed", white)
-									Graphics.termBlend()
-									Screen.flip()
-									break
-								elseif state == CANCELED then
-									Graphics.debugPrint(5, 5, "Backup canceled", white)
-									Graphics.termBlend()
-									Screen.flip()
-									break
-								end	
-							Graphics.termBlend()
-							Screen.flip()	
+						if flag then
+							copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
+							printText("Backup completed", white, "Exiting in 5 sec")
+						else
+							printText("Backup canceled", white, "Exiting in 5 sec")	
 						end	
 				else		
 					copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
-					Graphics.initBlend()
-					Screen.clear()
-					Graphics.debugPrint(5, 5, "Backup completed", white)
-					Graphics.termBlend()
-					Screen.flip()
+					printText("Backup completed", white, "Exiting in 5 sec")
 				end
 			else
-				System.setMessage("No icons file in your system!\nDo you wanna wipe the database to create the file?", false, BUTTON_YES_NO)
-				while true do
-					state = System.getMessageState()
-						if state == CANCELED then
-							Graphics.initBlend()
-							Screen.clear()
-							Graphics.debugPrint(5, 5, "Operation canceled", Color.new(255,51,51))
-							Graphics.termBlend()
-							Screen.flip()
-							break
-						elseif state == FINISHED then
-							wipeDB()
-						end
-				end			
+
+				flag = confirm("No icons file in your system!\nDo you wanna wipe the database to create the file?")
+				if flag then
+					wipeDB()
+				else
+					printText("Operation canceled", red, "Exiting in 5 sec")
+				end		
+				
 			end	
-		Graphics.initBlend()
-		Screen.clear()	
-		Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
-		Graphics.termBlend()
-		Screen.flip()
 		System.wait(5000000)
 		System.exit()
 	end
 	-- Check controls for restore
 	if Controls.check(Controls.read(), SCE_CTRL_CIRCLE) then
-
 		if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") then
-			System.setMessage("Your current icon layout will be lost!\nProceed with restoring your saved layout?", false, BUTTON_YES_NO)
-				while true do
-					Graphics.initBlend()
-					Screen.clear()
-					state = System.getMessageState()
-						if state == CANCELED then
-							Graphics.initBlend()
-							Screen.clear()
-							Graphics.debugPrint(5, 5, "Operation canceled", Color.new(255,51,51))
-							Graphics.termBlend()
-							Screen.flip()
-							break
-						elseif state == FINISHED then
-							copy("ux0:/data/iconsbak/iconlayout.ini", "ux0:/iconlayout.ini")
-							updateDB()
-						end
-					Graphics.termBlend()
-					Screen.flip()	
-				end
-			Graphics.initBlend()
-			Screen.clear()	
-			Graphics.debugPrint(5, 45, "Exiting in 5 sec", white)
-			Graphics.termBlend()
-			Screen.flip()
-			System.wait(5000000)
-			System.exit()
+			--no need to check..icon.ini will be created or overwritten!
+			flag = confirm("Your current icon layout will be lost!\nProceed with restoring your saved layout?")
+			if flag then 
+				copy("ux0:/data/iconsbak/iconlayout.ini", "ux0:/iconlayout.ini")
+				updateDB()
+			else
+				printText("Operation canceled", red, "Exiting in 5 sec")
+			end		
+
 		else
-			Graphics.initBlend()
-			Screen.clear()
-			Graphics.debugPrint(5, 5, "No file to restore\nUse the backup option of this app to create one", white)
-			Graphics.termBlend()
-			Screen.flip()
+			printText("No file to restore!\nUse the backup option of this app to create one.", white, "Exiting in 5 sec")
 		end	
+		System.wait(5000000)
+		System.exit()
 	end		
 end	--main loop end
