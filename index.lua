@@ -2,7 +2,8 @@ local white = Color.new(255,255,255)
 local red =  Color.new(255,51,51)-- Create a new color
 --[[TODO 
 *add file size check
-*add timer
+*add app.db options
+*Themeing options
 ]]
 System.createDirectory("ux0:/data/iconsbak")
 
@@ -13,7 +14,7 @@ function confirm(text)
 		Screen.clear()
 		Graphics.termBlend()
 		Screen.flip()
-		state = System.getMessageState()
+		local state = System.getMessageState()
 		if state == FINISHED then
 			return true
 		elseif state == CANCELED then
@@ -22,39 +23,46 @@ function confirm(text)
 	end
 end
 
-function printText(text1, color, text2)--at position 5,5
-	Graphics.initBlend()
-	Screen.clear()
-	Graphics.debugPrint(5, 5, text1, color)
-	Graphics.debugPrint(5, 45, text2, white)
-	Graphics.termBlend()
-	Screen.flip()
+function printText(text1, y1, color, text2, y2)--y1-y2 vertical pos
+	local timer = Timer.new()
+	time = 0
+	while true do
+		time = math.ceil(3-Timer.getTime(timer)/1000)
+		Graphics.initBlend()
+		Screen.clear()
+		Graphics.debugPrint(10, y1, text1, color)
+		Graphics.debugPrint(10, y2, text2..time.." sec", white)
+		Graphics.termBlend()
+		Screen.flip()
+		if time == 0 then
+			Timer.destroy(timer)
+		 	break 
+		end
+	end
 end
 
+
+
 function wipeDB()
-	flag = confirm("Your database will be wipped!\nYour system will reboot!\nProceed?")
+	local flag = confirm("Your database will be wipped!\nYour system will reboot!\nProceed?")
 	if flag then 
 		System.deleteFile("ur0:shell/db/app.db")
-		printText("Rebooting in 5 sec", white, "")
-		System.wait(5000000)
+		printText("", 45, white, "Rebooting in ", 5)
 		System.reboot()
 	else
-		printText("Wipe canceled", red, "Exiting in 5 sec")
-		System.wait(5000000)
+		printText("Wipe canceled", 5, red, "Exiting in ", 45)
 		System.exit()
 	end			
 end
 
 function updateDB()
 	System.deleteFile("ux0:/id.dat")
-	flag = confirm("Do you wanna reboot now?")
+	local flag = confirm("Do you wanna reboot now?")
 	if flag then 
-		printText("Rebooting in 5 sec", white, "")
-		System.wait(5000000)
+		printText("", 45, white, "Rebooting in ", 5)
 		System.reboot()
 	else
-		printText("Reboot canceled", red, "Exiting in 5 sec")
-		System.wait(5000000)
+		printText("Reboot canceled", 5, red, "Exiting in ", 45)
 		System.exit()
 	end		
 end
@@ -62,10 +70,10 @@ end
 function copy(file1, file2)
 	System.deleteFile(file2)
 	System.rename(file1, file2)--moving files
-	file = System.openFile(file2, FREAD)
-	size = System.sizeFile(file)
-	data = System.readFile(file, size)
-	newfile = System.openFile(file1, FCREATE)
+	local file = System.openFile(file2, FREAD)
+	local size = System.sizeFile(file)
+	local data = System.readFile(file, size)
+	local newfile = System.openFile(file1, FCREATE)
 	System.writeFile(newfile, data, size)
 end
 
@@ -73,12 +81,12 @@ while true do
 	-- Draw a string on the screen
 	Graphics.initBlend()
 	Screen.clear()
-	Graphics.debugPrint(5, 5, "Database Manager by deltaclock", white)
-	Graphics.debugPrint(5, 45, "Press X to backup your icon layout.", white)
-	Graphics.debugPrint(5, 65, "Press O to restore your icon layout.", white)
-	Graphics.debugPrint(5, 85, "Press L to update your database.", white)
-	Graphics.debugPrint(5, 105, "Press R to completely wipe your database.", white)
-	Graphics.debugPrint(5, 125, "Press Δ to exit.", white)
+	Graphics.debugPrint(10, 5, "Database Manager by deltaclock", white)
+	Graphics.debugPrint(10, 45, "Press X to backup your icon layout.", white)
+	Graphics.debugPrint(10, 65, "Press O to restore your icon layout.", white)
+	Graphics.debugPrint(10, 85, "Press L to update your database.", white)
+	Graphics.debugPrint(10, 105, "Press R to completely wipe your database.", white)
+	Graphics.debugPrint(10, 125, "Press Δ to exit.", white)
 	Graphics.termBlend()
 	
 	-- Update screen (For double buffering)
@@ -109,13 +117,13 @@ while true do
 
 						if flag then
 							copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
-							printText("Backup completed", white, "Exiting in 5 sec")
+							printText("Backup completed", 5, white, "Exiting in ", 45)
 						else
-							printText("Backup canceled", white, "Exiting in 5 sec")	
+							printText("Backup canceled", 5, white, "Exiting in ", 45)	
 						end	
 				else		
 					copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
-					printText("Backup completed", white, "Exiting in 5 sec")
+					printText("Backup completed", 5, white, "Exiting in ", 45)
 				end
 			else
 
@@ -123,12 +131,10 @@ while true do
 				if flag then
 					wipeDB()
 				else
-					printText("Operation canceled", red, "Exiting in 5 sec")
+					printText("Operation canceled", 5, white, "Exiting in ", 45)
 				end		
 				
 			end	
-		System.wait(5000000)
-		System.exit()
 	end
 	-- Check controls for restore
 	if Controls.check(Controls.read(), SCE_CTRL_CIRCLE) then
@@ -139,13 +145,11 @@ while true do
 				copy("ux0:/data/iconsbak/iconlayout.ini", "ux0:/iconlayout.ini")
 				updateDB()
 			else
-				printText("Operation canceled", red, "Exiting in 5 sec")
+				printText("Operation canceled", 5, white, "Exiting in ", 45)
 			end		
 
 		else
-			printText("No file to restore!\nUse the backup option of this app to create one.", white, "Exiting in 5 sec")
+			printText("No file to restore!\nUse the backup option of this app to create one.", 5, white, "Exiting in ", 45)
 		end	
-		System.wait(5000000)
-		System.exit()
 	end		
 end	--main loop end
