@@ -41,8 +41,6 @@ function printText(text1, y1, color, text2, y2)--y1-y2 vertical pos
 	end
 end
 
-
-
 function wipeDB()
 	local flag = confirm("Your database will be wipped!\nYour system will reboot!\nProceed?")
 	if flag then 
@@ -67,13 +65,12 @@ function updateDB()
 	end		
 end
 
-function copy(file1, file2)
+function copy(file1, file2)--move file1 to file2
 	System.deleteFile(file2)
-	System.rename(file1, file2)--moving files
-	local file = System.openFile(file2, FREAD)
-	local size = System.sizeFile(file)
-	local data = System.readFile(file, size)
-	local newfile = System.openFile(file1, FCREATE)
+	file = System.openFile(file1, FREAD)
+	size = System.sizeFile(file)
+	data = System.readFile(file, size)
+	newfile = System.openFile(file2, FCREATE)
 	System.writeFile(newfile, data, size)
 end
 
@@ -109,25 +106,27 @@ while true do
 
 	-- Check controls for backup
 	if Controls.check(Controls.read(), SCE_CTRL_CROSS) then
-			if System.doesFileExist("ux0:/iconlayout.ini") then
+			if System.doesFileExist("ux0:/iconlayout.ini") and System.doesFileExist("ur0:/shell/db/app.db") then
 
-				if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") then
+				if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") or System.doesFileExist("ur0:/shell/db/app.db") then
 
 					flag = confirm("Your previous backup will be overwritten!!\nDo you wanna continue?")
 
 						if flag then
 							copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
+							copy("ur0:/shell/db/app.db", "ux0:/data/iconsbak/app.db")
 							printText("Backup completed", 5, white, "Exiting in ", 45)
 						else
 							printText("Backup canceled", 5, white, "Exiting in ", 45)	
 						end	
 				else		
 					copy("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
+					copy("ur0:/shell/db/app.db", "ux0:/data/iconsbak/app.db")
 					printText("Backup completed", 5, white, "Exiting in ", 45)
 				end
 			else
 
-				flag = confirm("No icons file in your system!\nDo you wanna wipe the database to create the file?")
+				flag = confirm("No icons file in your system!\nDo you wanna wipe the database to create the files?")
 				if flag then
 					wipeDB()
 				else
@@ -135,6 +134,7 @@ while true do
 				end		
 				
 			end	
+		System.exit()	
 	end
 	-- Check controls for restore
 	if Controls.check(Controls.read(), SCE_CTRL_CIRCLE) then
@@ -143,6 +143,7 @@ while true do
 			flag = confirm("Your current icon layout will be lost!\nProceed with restoring your saved layout?")
 			if flag then 
 				copy("ux0:/data/iconsbak/iconlayout.ini", "ux0:/iconlayout.ini")
+				copy("ux0:/data/iconsbak/app.db", "ur0:/shell/db/app.db")
 				updateDB()
 			else
 				printText("Operation canceled", 5, white, "Exiting in ", 45)
@@ -151,5 +152,6 @@ while true do
 		else
 			printText("No file to restore!\nUse the backup option of this app to create one.", 5, white, "Exiting in ", 45)
 		end	
+		System.exit()
 	end		
 end	--main loop end
