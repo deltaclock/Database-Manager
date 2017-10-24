@@ -7,12 +7,11 @@ local red =  Color.new(255,51,51)-- Create a new color
 System.createDirectory("ux0:/data/iconsbak")
 System.createDirectory("ux0:/data/iconsbak/vitashell/")
 
-function confirm(msg, scrText)
+function confirm(msg)
 	System.setMessage(msg, false, BUTTON_YES_NO)
 	while true do
 		Graphics.initBlend()
 		Screen.clear()
-		Graphics.debugPrint(10, 10, scrText, white)
 		Graphics.termBlend()
 		Screen.flip()
 		local state = System.getMessageState()
@@ -24,73 +23,70 @@ function confirm(msg, scrText)
 	end
 end
 
-function printText(text1, y1, color, text2, y2)--y1-y2 vertical pos
+function printText(y1, text1, color1)
+	Graphics.initBlend()
+	Screen.clear()
+	Graphics.debugPrint(10, y1, text1, color1)
+	--Graphics.debugPrint(10, y2, text2, color2)
+	Graphics.termBlend()
+	Screen.flip()
+end
+
+function printWithTimer(text1, y1, color, text2, y2)--y1-y2 vertical pos
 	local timer = Timer.new()
-	time = 0
-	while true do
-		time = math.ceil(3-Timer.getTime(timer)/1000)
+	time = 1
+	while time > 0 do
+		time = math.ceil(3-Timer.getTime(timer)/1000)--3 sec
 		Graphics.initBlend()
 		Screen.clear()
 		Graphics.debugPrint(10, y1, text1, color)
 		Graphics.debugPrint(10, y2, text2..time.." sec", white)
 		Graphics.termBlend()
 		Screen.flip()
-		if time == 0 then
-			Timer.destroy(timer)
-		 	break 
-		end
 	end
+	Timer.destroy(timer)
 end
 
 function wipeDB()
-	local flag = confirm("Your database will be wipped!\nYour system will reboot!\nProceed?", "")
+	local flag = confirm("Your database will be wipped!\nYour system will reboot!\nProceed?")
 	if flag then 
 		System.deleteFile("ur0:shell/db/app.db")
-		printText("", 45, white, "Rebooting in ", 5)
+		printWithTimer("", 45, white, "Rebooting in ", 5)
 		System.reboot()
 	else
-		printText("Wipe canceled", 5, red, "Exiting in ", 45)
+		printWithTimer("Wipe canceled", 5, red, "Exiting in ", 45)
 		System.exit()
 	end			
 end
 
 function updateDB()
 	System.deleteFile("ux0:/id.dat")
-	local flag = confirm("Do you wanna reboot now?", "")
+	local flag = confirm("Do you wanna reboot now?")
 	if flag then 
-		printText("", 45, white, "Rebooting in ", 5)
+		printWithTimer("", 45, white, "Rebooting in ", 5)
 		System.reboot()
 	else
-		printText("Reboot canceled", 5, red, "Exiting in ", 45)
+		printWithTimer("Reboot canceled", 5, red, "Exiting in ", 45)
 		System.exit()
 	end		
 end
 
---[[function copy(file1, file2)--copy file1 to file2
-	System.deleteFile(file2)
-	file = System.openFile(file1, FREAD)
-	size = System.sizeFile(file)
-	data = System.readFile(file, size)
-	System.closeFile(file)
-	newfile = System.openFile(file2, FCREATE)
-	System.writeFile(newfile, data, size)
-	System.closeFile(newfile)
-end]]
-
-max_ram = 4194304--4mb
-
+allocatedMemory = 8388608--8mb
 function copyFile(file1, file2)--copy file1 to file2
 	if System.doesFileExist(file2) then
 		System.deleteFile(file2)
 	end
 	oldfile = System.openFile(file1, FREAD)
+	if oldfile == 0 then
+		return printText(10, "0-byte file detected!", red)
+	end	
 	newfile = System.openFile(file2, FCREATE)
 	size = System.sizeFile(oldfile)
 	totalCopiedBytes = 0 
-	while (totalCopiedBytes + max_ram/2) < size do
-		data = System.readFile(oldfile, max_ram/2)
-		System.writeFile(newfile, data, max_ram/2)
-		totalCopiedBytes = totalCopiedBytes + max_ram/2
+	while (totalCopiedBytes + allocatedMemory/2) < size do
+		data = System.readFile(oldfile, allocatedMemory/2)
+		System.writeFile(newfile, data, allocatedMemory/2)
+		totalCopiedBytes = totalCopiedBytes + allocatedMemory/2
 	end	
 	if totalCopiedBytes < size then
 		data = System.readFile(oldfile, size-totalCopiedBytes)
@@ -100,10 +96,21 @@ function copyFile(file1, file2)--copy file1 to file2
 	System.closeFile(newfile)
 end
 
+function deleteDir(dir)
+	local files = System.listDirectory(dir)
+	for z, file in pairs(files) do
+		if file.directory then
+			deleteDir(dir.."/"..file.name)
+		else
+			System.deleteFile(dir.."/"..file.name)
+		end
+	end
+	System.deleteDirectory(dir)
+end
 
-function copyDir(dir1, dir2)--recursive for test
+function copyDir(dir1, dir2)
 	if System.doesDirExist(dir2) then
-		System.deleteDirectory(dir2)--del destination
+		deleteDir(dir2)--del destination
 	end
 	System.createDirectory(dir2)
 	files = System.listDirectory(dir1)
@@ -111,36 +118,12 @@ function copyDir(dir1, dir2)--recursive for test
 
 		if dirfile.directory then
 
-           	copyDir(dir1..dirfile.name.."/" , dir2..dirfile.name.."/")
+           	copyDir(dir1.."/"..dirfile.name.."/", dir2.."/"..dirfile.name.."/")
 		else
-			copyFile(dir1..dirfile.name, dir2..dirfile.name)
+			copyFile(dir1.."/"..dirfile.name, dir2.."/"..dirfile.name)
 		end
 	end	
 end
-
---[[function copyDir(dir1, dir2)
-	System.deleteDirectory(dir2)--del destination
-	System.createDirectory(dir2)
-	files = System.listDirectory(dir1)
-	for i,dirfile in pairs(files) do
-
-		if dirfile.directory then
-
-			local cur_dir = dirfile.name.."/"
-			tbl = System.listDirectory(dir1..cur_dir)
-			System.createDirectory(dir2..cur_dir)
-			for j,fl in pairs(tbl) do
-				if dir1..cur_dir..fl.name ~= dir1.."Electron/bg_texteditor.png" then
-					--printText(i..j..dir1..cur_dir..fl.name, 20, white, dir2..cur_dir..fl.name, 45)--debug prints
-					copy(dir1..cur_dir..fl.name, dir2..cur_dir..fl.name)
-				end	
-			end
-		else
-			--printText(i..dir1..dirfile.name, 20, white, dir2..dirfile.name, 45)--debug prints
-			copy(dir1..dirfile.name, dir2..dirfile.name)
-		end
-	end	
-end]]
 
 while true do
 	-- Draw a string on the screen
@@ -180,27 +163,27 @@ while true do
 
 				if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") or System.doesFileExist("ur0:/shell/db/app.db") then
 
-					flag = confirm("Your previous backup will be overwritten!!\nDo you wanna continue?", "")
+					flag = confirm("Your previous backup will be overwritten!!\nDo you wanna continue?")
 
 						if flag then
 							copyFile("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
 							copyFile("ur0:/shell/db/app.db", "ux0:/data/iconsbak/app.db")
-							printText("Backup completed", 5, white, "Exiting in ", 45)
+							printWithTimer("Backup completed", 5, white, "Exiting in ", 45)
 						else
-							printText("Backup canceled", 5, white, "Exiting in ", 45)	
+							printWithTimer("Backup canceled", 5, white, "Exiting in ", 45)	
 						end	
 				else		
 					copyFile("ux0:/iconlayout.ini", "ux0:/data/iconsbak/iconlayout.ini")
 					copyFile("ur0:/shell/db/app.db", "ux0:/data/iconsbak/app.db")
-					printText("Backup completed", 5, white, "Exiting in ", 45)
+					printWithTimer("Backup completed", 5, white, "Exiting in ", 45)
 				end
 			else
 
-				flag = confirm("No icons file in your system!\nDo you wanna wipe the database to create the files?", "")
+				flag = confirm("No icons file in your system!\nDo you wanna wipe the database to create the files?")
 				if flag then
 					wipeDB()
 				else
-					printText("Operation canceled", 5, white, "Exiting in ", 45)
+					printWithTimer("Operation canceled", 5, white, "Exiting in ", 45)
 				end		
 				
 			end	
@@ -210,30 +193,34 @@ while true do
 	if Controls.check(Controls.read(), SCE_CTRL_CIRCLE) then
 		if System.doesFileExist("ux0:/data/iconsbak/iconlayout.ini") and System.doesFileExist("ux0:/data/iconsbak/app.db") then
 			--no need to check..icon.ini will be created or overwritten!
-			flag = confirm("Your current icon layout will be lost!\nYou will need to reboot to apply changes!\nProceed with restoring your saved layout?", "")
+			flag = confirm("Your current icon layout will be lost!\nYou will need to reboot to apply changes!\nProceed with restoring your saved layout?")
 			if flag then 
 				copyFile("ux0:/data/iconsbak/iconlayout.ini", "ux0:/iconlayout.ini")
 				copyFile("ux0:/data/iconsbak/app.db", "ur0:/shell/db/app.db")
 				updateDB()
 			else
-				printText("Operation canceled", 5, white, "Exiting in ", 45)
+				printWithTimer("Operation canceled", 5, white, "Exiting in ", 45)
 			end		
 
 		else
-			printText("No files to restore!\nUse the backup option of this app to create them.", 5, white, "Exiting in ", 45)
+			printWithTimer("No files to restore!\nUse the backup option of this app to create them.", 5, white, "Exiting in ", 45)
 		end	
 		System.exit()
 	end	
 	--viashell backup
 	if Controls.check(Controls.read(), SCE_CTRL_LEFT) then
 		if System.doesDirExist("ux0:/app/VITASHELL") then 
-			flag = confirm("This might take a while depending on number of themes\nContinue?", "Backing up the files..")
-			
-			copyDir("ux0:/VitaShell/theme/", "ux0:/data/iconsbak/vitashell/theme/")
-			copyFile("ux0:/VitaShell/settings.txt", "ux0:/data/iconsbak/vitashell/settings.txt")
-			printText("Backup completed", 5, white, "Exiting in ", 45)
+			flag = confirm("This might take a while depending on the number of themes\nContinue?")
+			if flag then
+				printText(10, "Backing up your themes...", white)
+				copyDir("ux0:/VitaShell/theme", "ux0:/data/iconsbak/vitashell/theme")
+				copyFile("ux0:/VitaShell/settings.txt", "ux0:/data/iconsbak/vitashell/settings.txt")
+				printWithTimer("Backup completed", 5, white, "Exiting in ", 45)
+			else
+				printWithTimer("Operation canceled", 5, white, "Exiting in ", 45)
+			end	
 		else
-			printText("VitaShell is not installed!", 5, red, "Exiting in ", 45)	
+			printWithTimer("VitaShell is not installed!", 5, red, "Exiting in ", 45)	
 		end
 		System.exit()
 	end
@@ -241,15 +228,21 @@ while true do
 	if Controls.check(Controls.read(), SCE_CTRL_RIGHT) then
 		if System.doesDirExist("ux0:/VitaShell") then
 			if System.doesDirExist("ux0:/data/iconsbak/vitashell") then
-				copyDir("ux0:/data/iconsbak/vitashell/theme/", "ux0:/VitaShell/theme/")
-				copyFile("ux0:/data/iconsbak/vitashell/settings.txt", "ux0:/VitaShell/settings.txt")
-				printText("Restore completed", 5, white, "Exiting in ", 45)
+				flag = confirm("Your current VitaShell themes will be lost!\nProceed with restoring your saved themes?")
+				if flag then
+					printText(10, "Restoring your themes...", white)
+					copyDir("ux0:/data/iconsbak/vitashell/theme", "ux0:/VitaShell/theme")
+					copyFile("ux0:/data/iconsbak/vitashell/settings.txt", "ux0:/VitaShell/settings.txt")
+					printWithTimer("Restore completed", 5, white, "Exiting in ", 45)
+				else
+					printWithTimer("Operation canceled", 5, white, "Exiting in ", 45)
+				end	
 			else
-				printText("No files to restore!\nUse the backup option of this app to create them.", 5, white, "Exiting in ", 45)
+				printWithTimer("No files to restore!\nUse the backup option of this app to create them.", 5, white, "Exiting in ", 45)
 			end
 
 		else
-			printText("Unable to locate VitaShell files!", 5, red, "Exiting in ", 45)	
+			printWithTimer("Unable to locate VitaShell files!", 5, red, "Exiting in ", 45)	
 		end
 		System.exit()
 	end	
